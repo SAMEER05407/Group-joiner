@@ -1,0 +1,496 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - WhatsApp Group Joiner</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #075E54;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .admin-badge {
+            background: #ffd700;
+            color: #000;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .status-section {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .qr-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .qr-code {
+            max-width: 256px;
+            margin: 20px auto;
+            display: block;
+            border: 3px solid #25D366;
+            border-radius: 10px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #25D366;
+        }
+
+        .btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #128C7E;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .result-success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+
+        .result-error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+
+        .result-link {
+            font-size: 12px;
+            opacity: 0.8;
+            word-break: break-all;
+        }
+
+        .progress {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+
+        .waiting-message {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .disconnect-section {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .disconnect-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .disconnect-btn:hover {
+            background-color: #c82333;
+        }
+
+        .disconnect-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .user-info {
+                position: static;
+                justify-content: center;
+                margin-top: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="user-info">
+                <div class="user-badge">👤 <%= username %></div>
+                <% if (isAdmin) { %>
+                    <div class="admin-badge">👑 Admin User</div>
+                <% } %>
+                <form method="POST" action="/logout" style="display: inline;">
+                    <button type="submit" class="logout-btn">🚪 Logout</button>
+                </form>
+            </div>
+            <h1>🚀 WhatsApp Group Joiner</h1>
+            <p>Join multiple WhatsApp groups instantly</p>
+        </div>
+
+        <div class="content">
+            <!-- Connection Status -->
+            <div id="status-section" class="status-section">
+                <h3 id="status-text">Connecting to WhatsApp...</h3>
+                <p id="status-description">Please wait while we establish connection</p>
+            </div>
+
+            <!-- QR Code Section -->
+            <div id="qr-section" class="qr-section" style="display: none;">
+                <h3>📱 Scan QR Code</h3>
+                <p>Open WhatsApp on your phone and scan this QR code</p>
+                <img id="qr-code" class="qr-code" alt="QR Code" style="display: none;">
+            </div>
+
+            <!-- Group Links Form -->
+            <div id="form-section" class="form-section" style="display: none;">
+                <div class="disconnect-section">
+                    <button id="disconnectBtn" class="disconnect-btn">
+                        🔌 Disconnect WhatsApp
+                    </button>
+                </div>
+                <form id="join-form">
+                    <div class="form-group">
+                        <label for="group-links">📝 WhatsApp Group Invite Links</label>
+                        <textarea 
+                            id="group-links" 
+                            name="links" 
+                            placeholder="Paste your WhatsApp group invite links here (one per line or comma separated)&#10;&#10;Example:&#10;https://chat.whatsapp.com/Abc123&#10;https://chat.whatsapp.com/Def456"
+                            required
+                        ></textarea>
+                    </div>
+                    <button type="submit" id="join-btn" class="btn">
+                        🔗 Join Groups
+                    </button>
+                </form>
+            </div>
+
+            <!-- Progress Section -->
+            <div id="progress" class="progress">
+                <div id="progress-text">Processing groups...</div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" class="results-section">
+                <h3>📊 Results</h3>
+                <div id="results-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const username = '<%= username %>';
+
+        // Join user-specific room
+        socket.emit('joinUserRoom', username);
+
+        // DOM elements
+        const statusSection = document.getElementById('status-section');
+        const statusText = document.getElementById('status-text');
+        const statusDescription = document.getElementById('status-description');
+        const qrSection = document.getElementById('qr-section');
+        const qrCode = document.getElementById('qr-code');
+        const formSection = document.getElementById('form-section');
+        const joinForm = document.getElementById('join-form');
+        const joinBtn = document.getElementById('join-btn');
+        const progress = document.getElementById('progress');
+        const progressText = document.getElementById('progress-text');
+        const resultsSection = document.getElementById('results-section');
+        const resultsContainer = document.getElementById('results-container');
+
+        // Socket event listeners
+        socket.on('connectionStatus', (data) => {
+            if (data.connected) {
+                statusSection.className = 'status-section status-connected';
+                statusText.textContent = '✅ WhatsApp Connected';
+                statusDescription.textContent = 'You can now join groups!';
+                qrSection.style.display = 'none';
+                formSection.style.display = 'block';
+            } else {
+                statusSection.className = 'status-section status-disconnected';
+                statusText.textContent = '❌ WhatsApp Disconnected';
+                statusDescription.textContent = 'Waiting for QR code...';
+                formSection.style.display = 'none';
+            }
+        });
+
+        socket.on('qrCode', (qrData) => {
+            qrCode.src = qrData;
+            qrCode.style.display = 'block';
+            qrSection.style.display = 'block';
+            statusText.textContent = '📱 Scan QR Code';
+            statusDescription.textContent = 'Open WhatsApp on your phone and scan the QR code below';
+        });
+
+        socket.on('joinResult', (data) => {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result-item ${data.success ? 'result-success' : 'result-error'}`;
+            resultDiv.innerHTML = `
+                <div><strong>[${data.index}/${data.total}]</strong> ${data.message}</div>
+                <div class="result-link">${data.link}</div>
+            `;
+            resultsContainer.appendChild(resultDiv);
+
+            progressText.textContent = `Processing group ${data.index} of ${data.total}...`;
+        });
+
+        socket.on('waiting', (data) => {
+            progressText.innerHTML = `<div class="waiting-message">⏳ Waiting ${data.seconds} seconds before next join...</div>`;
+        });
+
+        socket.on('disconnected', function(data) {
+            alert(data.message);
+            location.reload();
+        });
+
+        // Disconnect button event listener
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        if (disconnectBtn) {
+            disconnectBtn.addEventListener('click', async function() {
+                if (!confirm('Are you sure you want to disconnect from WhatsApp? You will need to scan QR code again.')) {
+                    return;
+                }
+
+                this.disabled = true;
+                this.textContent = 'Disconnecting...';
+
+                try {
+                    const response = await fetch('/disconnect', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert(data.message);
+                    } else {
+                        alert(data.message || 'Failed to disconnect');
+                        this.disabled = false;
+                        this.textContent = '🔌 Disconnect WhatsApp';
+                    }
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                    this.disabled = false;
+                    this.textContent = '🔌 Disconnect WhatsApp';
+                }
+            });
+        }
+
+        // Form submission
+        joinForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(joinForm);
+            const links = formData.get('links');
+
+            if (!links.trim()) {
+                alert('Please enter at least one group invite link');
+                return;
+            }
+
+            // Show progress and results
+            progress.style.display = 'block';
+            resultsSection.style.display = 'block';
+            resultsContainer.innerHTML = '';
+            joinBtn.disabled = true;
+            joinBtn.textContent = '🔄 Processing...';
+
+            try {
+                const response = await fetch('/join-groups', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ links: links })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    alert('Error: ' + result.message);
+                }
+
+                progressText.textContent = '✅ All groups processed!';
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+                progressText.textContent = '❌ Error occurred while processing';
+            } finally {
+                joinBtn.disabled = false;
+                joinBtn.textContent = '🔗 Join Groups';
+            }
+        });
+    </script>
+</body>
+</html>
