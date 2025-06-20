@@ -17,7 +17,7 @@ const PORT = 3000;
 // Hardcoded users
 const users = {
     'admin': { password: 'admin123', phone: '9209778319', isAdmin: true },
-    'user1': { password: 'pass123', phone: '9876543210', isAdmin: false },
+    'user1': { password: '9588586256', phone: '9876543210', isAdmin: false },
     'user2': { password: 'test123', phone: '9123456789', isAdmin: false }
 };
 
